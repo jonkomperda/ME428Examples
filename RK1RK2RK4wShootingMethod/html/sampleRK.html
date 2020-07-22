@@ -1,0 +1,411 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>sampleRK</title><meta name="generator" content="MATLAB 9.6"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2020-07-22"><meta name="DC.source" content="sampleRK.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">Governing Equation</a></li><li><a href="#3">Reduction into first-order ODEs</a></li><li><a href="#4">Discretization</a></li><li><a href="#5">The Shooting Method</a></li></ul></div><pre class="codeinput"><span class="comment">%Written by Jon Komperda for Numerical Methods ME428 at UIC</span>
+<span class="comment">%Not to be distributed without express written consent.</span>
+</pre><h2 id="2">Governing Equation</h2><pre>This program solves the boundary value problem:</pre><p><img src="sampleRK_eq16523757357097240523.png" alt="$$\frac{d^2u}{dx^2}+8=0$$"></p><p>with the boundary conditions <img src="sampleRK_eq03518276109365993586.png" alt="$u(0) = 0$"> and <img src="sampleRK_eq08321894711469999752.png" alt="$$u(L)=0$">.</p><h2 id="3">Reduction into first-order ODEs</h2><p>The governing equation is first caste into first-order differential equations so that we may apply the Runge-Kutta method for its solution.</p><p><img src="sampleRK_eq05225424058494870360.png" alt="$$Y_1=u, \quad \quad Y'_1=Y_2=u'$$"></p><p><img src="sampleRK_eq07371939084336075701.png" alt="$$Y_2=u', \quad \quad Y'_2=u''=-8$$"></p><h2 id="4">Discretization</h2><p>The RK4 <img src="sampleRK_eq03845174387838694102.png" alt="$K$"> coefficients are then calculated.</p><p><img src="sampleRK_eq16901664103457594465.png" alt="$$K_{11}=\Delta x F_1(x,Y_1,Y_2)=\Delta x Y_2$$"></p><p><img src="sampleRK_eq06372320209770380106.png" alt="$$K_{12}=\Delta x F_2(x,Y_1,Y_2)= -8 \Delta x$$"></p><p><img src="sampleRK_eq07985780960168054350.png" alt="$$K_{21}=\Delta x F_1(x,Y_1+\frac{K_{11}}{2},Y_2+\frac{K_{12}}{2})=\Delta x \left ( Y_2+\frac{K_{12}}{2} \right)$$"></p><p><img src="sampleRK_eq09585233830420310378.png" alt="$$K_{22}=\Delta x F_2(x,Y_1+\frac{K_{11}}{2},Y_2+\frac{K_{12}}{2})= -8 \Delta x$$"></p><p><img src="sampleRK_eq18197471523738653882.png" alt="$$K_{31}=\Delta x F_1(x,Y_1+\frac{K_{21}}{2},Y_2+\frac{K_{22}}{2})=\Delta x \left ( Y_2+\frac{K_{22}}{2} \right)$$"></p><p><img src="sampleRK_eq00967946822351918563.png" alt="$$K_{32}=\Delta x F_2(x,Y_1+\frac{K_{21}}{2},Y_2+\frac{K_{22}}{2})= -8 \Delta x$$"></p><p><img src="sampleRK_eq13005066600205622463.png" alt="$$K_{41}=\Delta x F_1(x,Y_1+K_{31},Y_2+K_{32})=\Delta x \left ( Y_2+K_{32} \right)$$"></p><p><img src="sampleRK_eq05921504052631832493.png" alt="$$K_{42}=\Delta x F_2(x,Y_1+K_{31},Y_2+K_{32})= -8 \Delta x$$"></p><p>After this, we may select either RK1, RK2, or RK4 method. The equations for the RK1 update only use the <img src="sampleRK_eq01529601730681564476.png" alt="$K_{11}$"> and $K_{12} coefficients and are shown to be,</p><p><img src="sampleRK_eq16256650248110920497.png" alt="$$Y_{1,i+1}=Y_{1,i}+K_{11}$$"></p><p><img src="sampleRK_eq18082553978685867389.png" alt="$$Y_{2,i+1}=Y_{1,i}+K_{12}.$$"></p><p>The RK2 update equations use the additional <img src="sampleRK_eq07084992324589234069.png" alt="$K_{21}$"> and <img src="sampleRK_eq05902072051711973792.png" alt="$K_{22}$">, and are shown to be,</p><p><img src="sampleRK_eq15827808727944387791.png" alt="$$Y_{1,i+1}=Y_{1,i}+K_{21}$$"></p><p><img src="sampleRK_eq09986891388379879669.png" alt="$$Y_{2,i+1}=Y_{1,i}+K_{22}.$$"></p><p>Finally, RK4 uses all eight coefficients. The update is the weighted averages of the <img src="sampleRK_eq03845174387838694102.png" alt="$K$"> coefficients, and is shown as,</p><p><img src="sampleRK_eq13706621083358503196.png" alt="$$Y_{1,i+1}=Y_{1,i}+\frac{1}{6} \left ( K_{11} + 2 K_{21} + 2 K_{31} + K_{41} \right )$$"></p><p><img src="sampleRK_eq15583398270015284970.png" alt="$$Y_{2,i+1}=Y_{1,i}+\frac{1}{6} \left ( K_{12} + 2 K_{22} + 2 K_{32} + K_{42} \right )$$"></p><p>After the update, the solutions for <img src="sampleRK_eq11776305044305525613.png" alt="$u$"> and <img src="sampleRK_eq01362186507001040549.png" alt="$u'$"> are retained as</p><p><img src="sampleRK_eq15314599237087559564.png" alt="$$u=Y_1 \quad \mbox{and} \quad u'=Y_2.$$"></p><h2 id="5">The Shooting Method</h2><p>Since this is a boundary value problem (BVP), and the RK method only works on initial value problems (IVP), we must use shooting method to determine the correct value of <img src="sampleRK_eq13405058057751307377.png" alt="$u'(0)$"> which satisfies <img src="sampleRK_eq12240893598042918294.png" alt="$u(L)=0$">. We provide two initial guesses, and run the RK procedure twice, which produces two values for <img src="sampleRK_eq01777469186438806701.png" alt="$u(L)$">. At the third iteration, we use shooting method to produce an improved guess for <img src="sampleRK_eq13405058057751307377.png" alt="$u'(0)$"> that should satisfy <img src="sampleRK_eq12240893598042918294.png" alt="$u(L)=0$">. This procedure continues until the convergence criteria are met.</p><p>The guess is produced by using the following shooting method equations,</p><p><img src="sampleRK_eq07106911719095567326.png" alt="$$ \frac{dy_b}{dP} = \frac{ y_b(P_i)-y_b(P_{i-1} }{P_i - P_{i-1}}$$"></p><p><img src="sampleRK_eq04533879015886366691.png" alt="$$ P_{i+1} = P_{i} - \frac{y_b(P_i)-B}{\frac{dy_b}{dP}}$$"></p><p>Note that for an IVP, you would not have to use the shooting method. This is only necessary because the equation this code is solving is a BVP.</p><pre class="codeinput"><span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+<span class="comment">% This example shows how to use different RK methods in   %</span>
+<span class="comment">% conjunction with the shooting method. You can specify:  %</span>
+<span class="comment">% n = number of solution points                           %</span>
+<span class="comment">% eps = convergence criteria                              %</span>
+<span class="comment">% RKOrder = selects between RK1, RK2, and RK4             %</span>
+<span class="comment">% guess = this guesses Y2                                 %</span>
+<span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+
+n = 51;
+L = 1;
+eps=0.000001;
+RKOrder = 4; <span class="comment">%This can be set to 1, 2, or 4</span>
+guess = 3;
+
+<span class="comment">%%%%%%%%%%%%%%%</span>
+<span class="comment">% do not edit below here</span>
+
+dx = L/(n-1); <span class="comment">% Calculate \Delta x</span>
+y1g = 0; <span class="comment">% This is the known boundary condition on the left hand side</span>
+y2g = guess; <span class="comment">% This is our guess for the IVP first derivative... only change this one</span>
+B   = 0; <span class="comment">% This is the correct, known, boundary condition on the right side</span>
+
+<span class="comment">%This is the shooting method loop</span>
+k=1;
+err = 1;
+u = zeros(3,n);
+<span class="keyword">while</span>(err&gt;eps)
+    <span class="keyword">if</span>(k==1) <span class="comment">% first iteration of shooting method</span>
+        <span class="comment">% This sets our boundary conditions to our guesses</span>
+        y1(1) = y1g;
+        y2(1) = y2g;
+    <span class="keyword">elseif</span>(k==2) <span class="comment">% second iteration, we change the guess a little</span>
+        y1(1) = 1.1*y1g;
+        y2(1) = 1.1*y2g;
+    <span class="keyword">elseif</span>(k&gt;=3)
+        y1(1)=y1g;
+        y2(1)=p(k);
+    <span class="keyword">end</span>
+
+    <span class="comment">% this is the actual RK iteration</span>
+    <span class="keyword">for</span> i=1:n-1
+        k11 = dx*y2(i);
+        k12 = -8*dx;
+        <span class="keyword">if</span>(RKOrder==2 || RKOrder==4) <span class="comment">%We only need this coefficient for RK2 and RK4</span>
+            k21 = dx*(y2(i)+k12/2);
+            k22 = -8*dx;
+        <span class="keyword">end</span>
+        <span class="keyword">if</span>(RKOrder==4) <span class="comment">%We only need this coefficient for RK4</span>
+            k31 = dx*(y2(i)+k22/2);
+            k32 = -8*dx;
+            k41 = dx*(y2(i)+k32);
+            k42 = -8*dx;
+        <span class="keyword">end</span>
+
+        <span class="keyword">switch</span> RKOrder <span class="comment">%Chooses which RK update we want to use</span>
+            <span class="keyword">case</span> 4 <span class="comment">%This is RK4 solution update</span>
+                y1(i+1) = y1(i)+(1/6)*(k11+2*k21+2*k31+k41);
+                y2(i+1) = y2(i)+(1/6)*(k12+2*k22+2*k32+k42);
+            <span class="keyword">case</span> 2 <span class="comment">%This is RK2 solution update</span>
+                y1(i+1) = y1(i)+k21;
+                y2(i+1) = y2(i)+k22;
+            <span class="keyword">case</span> 1 <span class="comment">%This is RK1 solution update</span>
+                y1(i+1) = y1(i)+k11;
+                y2(i+1) = y2(i)+k12;
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+    yb(k) = y1(n); <span class="comment">%store our last point for shooting method</span>
+    p(k) = y2(1); <span class="comment">%store our guess for shooting method</span>
+
+    <span class="keyword">if</span>(k&gt;=2) <span class="comment">%we start the shooting method improved guesses after the third iteration to yield a new improved guess</span>
+        dybdp = (yb(k)-yb(k-1))/(p(k)-p(k-1));
+        p(k+1) = p(k) - (yb(k)-B)/dybdp;
+
+        <span class="comment">%calculate our error</span>
+        err = abs(yb(k)-B)
+    <span class="keyword">end</span>
+
+    <span class="comment">%This just stores all of our iterations/guesses to plot later</span>
+    u(k,:)=y1(:);
+
+    k=k+1 <span class="comment">%iterate the guess number</span>
+<span class="keyword">end</span>
+
+<span class="comment">%Plots some of our guesses to show what's happening</span>
+figure(1)
+x = 0:dx:L;
+plot(x,u(1,:))
+hold <span class="string">on</span>
+plot(x,u(2,:))
+plot(x,u(3,:))
+xlabel(<span class="string">'x'</span>)
+ylabel(<span class="string">'u'</span>)
+legend(<span class="string">'Guess #1'</span>,<span class="string">'Guess #2'</span>,<span class="string">'Shooting Method Guess'</span>);
+title(<span class="string">'Guesses from shooting method'</span>)
+<span class="string">"Shooting method guessed the Y2:"</span>
+p(k)
+
+figure(2)
+plot(x,y1)
+xlabel(<span class="string">'x'</span>)
+ylabel(<span class="string">'u'</span>)
+title(<span class="string">'The final answer for u'</span>)
+</pre><pre class="codeoutput">
+k =
+
+     2
+
+
+err =
+
+    0.7000
+
+
+k =
+
+     3
+
+
+err =
+
+   1.1380e-15
+
+
+k =
+
+     4
+
+
+ans = 
+
+    "Shooting method guessed the Y2:"
+
+
+ans =
+
+    4.0000
+
+</pre><img vspace="5" hspace="5" src="sampleRK_01.png" alt=""> <img vspace="5" hspace="5" src="sampleRK_02.png" alt=""> <p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2019a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%Written by Jon Komperda for Numerical Methods ME428 at UIC
+%Not to be distributed without express written consent.
+
+%% Governing Equation
+%  This program solves the boundary value problem:
+%
+% $$\frac{d^2u}{dx^2}+8=0$$
+%
+% with the boundary conditions $u(0) = 0$ and $$u(L)=0$. 
+%
+%% Reduction into first-order ODEs
+% The governing equation is first caste into first-order differential
+% equations so that we may apply the Runge-Kutta method for its solution.
+% 
+% $$Y_1=u, \quad \quad Y'_1=Y_2=u'$$
+% 
+% 
+% $$Y_2=u', \quad \quad Y'_2=u''=-8$$
+% 
+%% Discretization
+% The RK4 $K$ coefficients are then calculated.
+% 
+% $$K_{11}=\Delta x F_1(x,Y_1,Y_2)=\Delta x Y_2$$
+% 
+% 
+% $$K_{12}=\Delta x F_2(x,Y_1,Y_2)= -8 \Delta x$$
+% 
+% 
+% $$K_{21}=\Delta x F_1(x,Y_1+\frac{K_{11}}{2},Y_2+\frac{K_{12}}{2})=\Delta x \left ( Y_2+\frac{K_{12}}{2} \right)$$
+% 
+% 
+% $$K_{22}=\Delta x F_2(x,Y_1+\frac{K_{11}}{2},Y_2+\frac{K_{12}}{2})= -8 \Delta x$$
+% 
+% 
+% $$K_{31}=\Delta x F_1(x,Y_1+\frac{K_{21}}{2},Y_2+\frac{K_{22}}{2})=\Delta x \left ( Y_2+\frac{K_{22}}{2} \right)$$
+% 
+% 
+% $$K_{32}=\Delta x F_2(x,Y_1+\frac{K_{21}}{2},Y_2+\frac{K_{22}}{2})= -8 \Delta x$$
+% 
+% 
+% $$K_{41}=\Delta x F_1(x,Y_1+K_{31},Y_2+K_{32})=\Delta x \left ( Y_2+K_{32} \right)$$
+% 
+% 
+% $$K_{42}=\Delta x F_2(x,Y_1+K_{31},Y_2+K_{32})= -8 \Delta x$$
+% 
+% After this, we may select either RK1, RK2, or RK4 method. The equations
+% for the RK1 update only use the $K_{11}$ and $K_{12} coefficients and are shown to be,
+% 
+% $$Y_{1,i+1}=Y_{1,i}+K_{11}$$
+% 
+% 
+% $$Y_{2,i+1}=Y_{1,i}+K_{12}.$$
+% 
+% The RK2 update equations use the additional $K_{21}$ and $K_{22}$, and are shown to
+% be,
+% 
+% $$Y_{1,i+1}=Y_{1,i}+K_{21}$$
+% 
+% 
+% $$Y_{2,i+1}=Y_{1,i}+K_{22}.$$
+% 
+% Finally, RK4 uses all eight coefficients. The update is the weighted
+% averages of the $K$ coefficients, and is shown as,
+% 
+% $$Y_{1,i+1}=Y_{1,i}+\frac{1}{6} \left ( K_{11} + 2 K_{21} + 2 K_{31} + K_{41} \right )$$
+% 
+% 
+% $$Y_{2,i+1}=Y_{1,i}+\frac{1}{6} \left ( K_{12} + 2 K_{22} + 2 K_{32} + K_{42} \right )$$
+% 
+% After the update, the solutions for $u$ and $u'$ are retained as
+%
+% $$u=Y_1 \quad \mbox{and} \quad u'=Y_2.$$
+%
+%% The Shooting Method
+% Since this is a boundary value problem (BVP), and the RK method only
+% works on initial value problems (IVP), we must use shooting method to
+% determine the correct value of $u'(0)$ which satisfies $u(L)=0$. We
+% provide two initial guesses, and run the RK procedure twice, which
+% produces two values for $u(L)$. At the third iteration, we use shooting
+% method to produce an improved guess for $u'(0)$ that should satisfy
+% $u(L)=0$. This procedure continues until the convergence criteria are
+% met.
+%
+% The guess is produced by using the following shooting method equations,
+%
+% $$ \frac{dy_b}{dP} = \frac{ y_b(P_i)-y_b(P_{i-1} }{P_i - P_{i-1}}$$
+%
+% $$ P_{i+1} = P_{i} - \frac{y_b(P_i)-B}{\frac{dy_b}{dP}}$$
+%
+% Note that for an IVP, you would not have to use the shooting method. This
+% is only necessary because the equation this code is solving is a BVP.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This example shows how to use different RK methods in   %
+% conjunction with the shooting method. You can specify:  %
+% n = number of solution points                           %
+% eps = convergence criteria                              %
+% RKOrder = selects between RK1, RK2, and RK4             %
+% guess = this guesses Y2                                 %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+n = 51;
+L = 1;
+eps=0.000001;
+RKOrder = 4; %This can be set to 1, 2, or 4
+guess = 3;
+
+%%%%%%%%%%%%%%%
+% do not edit below here
+
+dx = L/(n-1); % Calculate \Delta x
+y1g = 0; % This is the known boundary condition on the left hand side
+y2g = guess; % This is our guess for the IVP first derivative... only change this one
+B   = 0; % This is the correct, known, boundary condition on the right side
+
+%This is the shooting method loop
+k=1;
+err = 1;
+u = zeros(3,n);
+while(err>eps)
+    if(k==1) % first iteration of shooting method
+        % This sets our boundary conditions to our guesses
+        y1(1) = y1g;
+        y2(1) = y2g;
+    elseif(k==2) % second iteration, we change the guess a little
+        y1(1) = 1.1*y1g;
+        y2(1) = 1.1*y2g;
+    elseif(k>=3)
+        y1(1)=y1g;
+        y2(1)=p(k);
+    end
+        
+    % this is the actual RK iteration
+    for i=1:n-1
+        k11 = dx*y2(i);
+        k12 = -8*dx;
+        if(RKOrder==2 || RKOrder==4) %We only need this coefficient for RK2 and RK4
+            k21 = dx*(y2(i)+k12/2);
+            k22 = -8*dx;
+        end
+        if(RKOrder==4) %We only need this coefficient for RK4
+            k31 = dx*(y2(i)+k22/2);
+            k32 = -8*dx;
+            k41 = dx*(y2(i)+k32);
+            k42 = -8*dx;
+        end
+        
+        switch RKOrder %Chooses which RK update we want to use
+            case 4 %This is RK4 solution update
+                y1(i+1) = y1(i)+(1/6)*(k11+2*k21+2*k31+k41);
+                y2(i+1) = y2(i)+(1/6)*(k12+2*k22+2*k32+k42);
+            case 2 %This is RK2 solution update
+                y1(i+1) = y1(i)+k21;
+                y2(i+1) = y2(i)+k22;
+            case 1 %This is RK1 solution update
+                y1(i+1) = y1(i)+k11;
+                y2(i+1) = y2(i)+k12;
+        end
+    end
+    
+    yb(k) = y1(n); %store our last point for shooting method
+    p(k) = y2(1); %store our guess for shooting method
+    
+    if(k>=2) %we start the shooting method improved guesses after the third iteration to yield a new improved guess
+        dybdp = (yb(k)-yb(k-1))/(p(k)-p(k-1));
+        p(k+1) = p(k) - (yb(k)-B)/dybdp;
+        
+        %calculate our error
+        err = abs(yb(k)-B)
+    end
+    
+    %This just stores all of our iterations/guesses to plot later
+    u(k,:)=y1(:);
+    
+    k=k+1 %iterate the guess number
+end
+
+%Plots some of our guesses to show what's happening
+figure(1)
+x = 0:dx:L;
+plot(x,u(1,:))
+hold on
+plot(x,u(2,:))
+plot(x,u(3,:))
+xlabel('x')
+ylabel('u')
+legend('Guess #1','Guess #2','Shooting Method Guess');
+title('Guesses from shooting method')
+"Shooting method guessed the Y2:"
+p(k)
+
+figure(2)
+plot(x,y1)
+xlabel('x')
+ylabel('u')
+title('The final answer for u')
+##### SOURCE END #####
+--></body></html>
